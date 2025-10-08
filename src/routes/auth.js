@@ -39,16 +39,24 @@ router.post('/login', async (req, res) => { // ruta /auth/login esperando un POS
                 return res.status(401).json({message: 'Invalid token', error: err.message}); // 401: Unathorized
             }
 
+            const user = {
+                id: decoded.oid, // ID unico del usuario en Azure
+                email: decoded.preferred_username, // correo del usuario
+                name: decoded.name, // nombre del usuario
+                roles: decoded.roles || [], // roles del usuario
+                upn: decoded.upn // User Principal Name
+            }
+
             const appToken = jwt.sign( // genera un nuevo token para la app
                 {
-                    uid: decoded.oid, // ID unico del usuario en Azure
-                    email: decoded.preferred_username // correo del usuario
+                    uid: user.id, // ID unico del usuario en Azure
+                    email: user.email // correo del usuario
                 },
                 process.env.APP_SECRET, // clave secreta para firmar el token
                 {expiresIn: '1h'} // expira en 1 hora
             );
 
-            return res.json({succes: true, token: appToken}); // devuelve el nuevo token
+            return res.json({token: appToken, user}); // devuelve el nuevo token
         }
     );
 });
