@@ -10,3 +10,6 @@ app.use(cors()); // Habilitar CORS para todas las rutas
 app.use(express.json()); // Parsear JSON en las solicitudes
 
 app.use('/auth', authRoutes); // Rutas de autenticacion
+
+const PORT = process.env.PORT || 3000; // Puerto del servidor
+app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`)); // Inicia el servidor
