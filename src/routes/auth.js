@@ -1,76 +1,11 @@
 // Código para manejar las rutas de /auth/
 
 import express from "express";
-import jwt from "jsonwebtoken";
-import jwksClient from "jwks-rsa";
 import fetch from "node-fetch";
 
 const router = express.Router();
 
-// Cliente para obtener las claves públicas de Azure
-const client = jwksClient({
-  jwksUri: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/discovery/v2.0/keys`,
-});
-
 const scopes = ['openid', 'profile', 'email', 'offline_access', 'User.Read'];
-
-// Función para obtener la clave pública
-function getKey(header, callback) {
-  console.log("Obteniendo clave pública de Azure...");
-  client.getSigningKey(header.kid, (err, key) => {
-    if (err) return callback(err);
-    const signingKey = key.getPublicKey();
-    callback(null, signingKey);
-  });
-}
-
-// Ruta: /auth/TokenForJWT
-router.post("/TokenForJWT", async (req, res) => {
-  console.log("Accediendo a /auth/TokenForJWT");
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(401).json({ message: "Token is required" });
-  }
-
-  jwt.verify(
-    token,
-    getKey,
-    {
-      algorithms: ["RS256"],
-      audience: process.env.AZURE_CLIENT_ID,
-      issuer: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
-    },
-    (err, decoded) => {
-      if (err) {
-        console.error("Error verificando el token:", err);
-        return res
-          .status(401)
-          .json({ message: "Invalid token", error: err.message });
-      }
-
-      const user = {
-        id: decoded.oid,
-        email: decoded.preferred_username,
-        name: decoded.name,
-        roles: decoded.roles || [],
-        upn: decoded.upn,
-      };
-
-      const appToken = jwt.sign(
-        {
-          uid: user.id,
-          email: user.email,
-        },
-        process.env.APP_SECRET,
-        { expiresIn: "1h" }
-      );
-
-      console.log("Token JWT generado correctamente para usuario:", user.email);
-      return res.json({ token: appToken, user });
-    }
-  );
-});
 
 // Ruta: /auth/CodeForToken
 router.post("/CodeForToken", async (req, res) => {
