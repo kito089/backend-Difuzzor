@@ -4,12 +4,16 @@ import express from 'express'; // habilita el uso de rutas
 import cors from 'cors'; // permitir solicitudes desde otros dominios
 import authRoutes from './routes/auth.js'; // importa las rutas de autenticacion
 
+console.log("Iniciando el servidor...");
 const app = express();
 
+console.log("Configurando middlewares...");
 app.use(cors()); // Habilitar CORS para todas las rutas
 app.use(express.json()); // Parsear JSON en las solicitudes
 
+console.log("Configurando rutas...");
 app.use('/auth', authRoutes); // Rutas de autenticacion
 
+console.log("Iniciando el servidor en el puerto especificado... ${process.env.PORT || 3000}");
 const PORT = process.env.PORT || 3000; // Puerto del servidor
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`)); // Inicia el servidor
