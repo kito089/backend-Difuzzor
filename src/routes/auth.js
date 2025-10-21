@@ -10,7 +10,7 @@ const scopes = ['openid', 'profile', 'email', 'offline_access', 'User.Read'];
 // Ruta de prueba: /auth/
 router.get("/", (req, res) => {
   console.log("Accediendo a /auth/");
-  res.send("Ruta de autenticación funcionando ✅");
+  res.send("Ruta de autenticación funcionando");
 });
 
 // Ruta: /auth/CodeForToken
@@ -18,8 +18,8 @@ router.post("/CodeForToken", async (req, res) => {
   try {
     console.log("Accediendo a /auth/CodeForToken");
 
-    const { authCode } = req.body;
-    if (!authCode) {
+    const { body } = req.body;
+    if (!body) {
       return res.status(400).json({ success: false, message: "authCode is required" });
     }
 
@@ -27,7 +27,7 @@ router.post("/CodeForToken", async (req, res) => {
 
     const requestBody = new URLSearchParams({
       client_id: process.env.AZURE_CLIENT_ID,
-      code: authCode,
+      code: body,
       redirect_uri: "difuzzor://auth",
       grant_type: "authorization_code",
       scope: scopes.join(" "),
@@ -64,19 +64,65 @@ router.post("/CodeForToken", async (req, res) => {
   }
 });
 
+// Ruta: /auth/RefreshToken
+router.post("/RefreshToken", async (req, res) => {
+  try {
+    console.log("Accediendo a /auth/RefreshToken");
+    const { body } = req.body;
+
+    if (!body) {
+      return res.status(400).json({ success: false, message: "refreshToken is required" });
+    }
+
+    const tokenUrl = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`;
+
+    const requestBody = new URLSearchParams({
+      client_id: process.env.AZURE_CLIENT_ID,
+      refresh_token: body,
+      grant_type: "refresh_token",
+      scope: scopes.join(" "),
+    });
+
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: requestBody.toString(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error ${response.status}: ${errorText}`);
+    }
+
+    const tokenData = await response.json();
+    console.log("Token refrescado exitosamente desde Azure");
+    return res.json({
+      success: true,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      id_token: tokenData.id_token,
+      expires_in: tokenData.expires_in,
+    });
+
+  } catch (error) {
+    console.error("Error refrescando token:", error);
+    return res.json({ success: false, error: error.message });
+  }
+}); 
+
 // Ruta: /auth/validateToken
 router.post("/validateToken", async (req, res) => {
   try {
     console.log("Accediendo a /auth/validateToken");
-    const { accessToken } = req.body;
+    const { body } = req.body;
 
-    if (!accessToken) {
+    if (!body) {
       return res.status(400).json({ success: false, message: "accessToken is required" });
     }
 
     const response = await fetch("https://graph.microsoft.com/v1.0/me", {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${body}`,
         "Content-Type": "application/json",
       },
     });
@@ -93,15 +139,15 @@ router.post("/validateToken", async (req, res) => {
 router.post("/getUserInfo", async (req, res) => {
   try {
     console.log("Accediendo a /auth/getUserInfo");
-    const { accessToken } = req.body;
+    const { body } = req.body;
 
-    if (!accessToken) {
+    if (!body) {
       return res.status(400).json({ success: false, message: "accessToken is required" });
     }
 
     const response = await fetch("https://graph.microsoft.com/v1.0/me", {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${body}`,
         "Content-Type": "application/json",
       },
     });

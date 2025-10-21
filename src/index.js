@@ -13,10 +13,10 @@ app.use(express.json()); // Parsear JSON en las solicitudes
 
 console.log("Configurando rutas...");
 app.get("/", (req, res) => {
-  res.send("Servidor funcionando correctamente ✅");
+  res.send("Servidor funcionando correctamente");
 });
 app.use('/auth', authRoutes); // Rutas de autenticacion
 
-console.log("Iniciando el servidor en el puerto especificado... ${process.env.PORT || 3000}");
+console.log(`Iniciando el servidor en el puerto especificado... ${process.env.PORT || 3000}`);
 const PORT = process.env.PORT || 3000; // Puerto del servidor
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`)); // Inicia el servidor
