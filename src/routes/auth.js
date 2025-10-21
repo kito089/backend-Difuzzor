@@ -31,7 +31,6 @@ router.post("/CodeForToken", async (req, res) => {
       redirect_uri: "difuzzor://auth",
       grant_type: "authorization_code",
       scope: scopes.join(" "),
-      client_secret: process.env.AZURE_CLIENT_SECRET, //asegúrate de configurarlo en Azure
     });
 
     console.log("Solicitando token a Azure AD...");
