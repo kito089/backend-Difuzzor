@@ -7,6 +7,12 @@ const router = express.Router();
 
 const scopes = ['openid', 'profile', 'email', 'offline_access', 'User.Read'];
 
+// Ruta de prueba: /auth/
+router.get("/", (req, res) => {
+  console.log("Accediendo a /auth/");
+  res.send("Ruta de autenticación funcionando ✅");
+});
+
 // Ruta: /auth/CodeForToken
 router.post("/CodeForToken", async (req, res) => {
   try {
