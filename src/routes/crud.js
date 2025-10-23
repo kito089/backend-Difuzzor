@@ -1,7 +1,7 @@
 // Código para manejar las rutas de /crud/
 
 import express from "express";
-import dbController from '../controllers/dbController.js';
+import {seleccionarTodos , seleccionarId} from '../controllers/dbController.js';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.get("/", (req, res) => {
 // Ruta: /crud/obtener/:tabla
 router.get("/obtener/:tabla", async (req, res) => {
     try {
-        const datos = await dbController.seleccionarTodos(req.params.tabla);
+        const datos = await seleccionarTodos(req.params.tabla);
         if (!datos) return res.status(404).send('Tabla no encontrada');
         res.json(datos);
     } catch (err) {
@@ -27,7 +27,7 @@ router.get("/obtener/:tabla", async (req, res) => {
 // Ruta: /crud/obtener/:tabla/:id
 router.get('/obtener/:tabla/:id', async (req, res) => {
     try {
-        const datos = await productosController.obtenerPorId(req,params.tabla, req.params.id);
+        const datos = await seleccionarId(req,params.tabla, req.params.id);
         if (!datos) return res.status(404).send('Datos no encontrados');
         res.json(datos);
     } catch (err) {
