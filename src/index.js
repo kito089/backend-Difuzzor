@@ -11,6 +11,7 @@ const app = express();
 console.log("Configurando middlewares...");
 app.use(cors()); // Habilitar CORS para todas las rutas
 app.use(express.json()); // Parsear JSON en las solicitudes
+app.use(express.urlencoded({ extended: true })); // Parsear datos codificados en URL
 
 console.log("Configurando rutas...");
 app.get("/", (req, res) => {

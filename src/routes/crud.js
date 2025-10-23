@@ -5,7 +5,6 @@ import {seleccionarTodos , seleccionarId} from '../controllers/dbController.js';
 
 const router = express.Router();
 
-
 // Ruta de prueba: /crud/
 router.get("/", (req, res) => {
   console.log("Accediendo a /crud/");
