@@ -30,17 +30,23 @@ export async function seleccionarId(tabla, id) {
 // Funcion para insertar datos
 
 export async function insertarDatos(tabla, datos) {
-    const pool = await poolPromise;
-    const atributos = await obtenerAtributos(tabla);
-    const columnas = atributos.join(', '); 
-    const valores = atributos.map(attr => `@${attr}`).join(', '); // Valores parametrizados (@id, @nombre, ...)
-    const request = pool.request();
-    atributos.forEach(attr => {
-        request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
-    });
-    const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
-    await request.query(query);
-    return { success: true, message: 'Datos insertados correctamente' };
+    console.log("Insertando en tabla:", tabla, "los datos:", datos);
+    try{
+        const pool = await poolPromise;
+        const atributos = await obtenerAtributos(tabla);
+        const columnas = atributos.join(', '); 
+        const valores = atributos.map(attr => `@${attr}`).join(', '); // Valores parametrizados (@id, @nombre, ...)
+        const request = pool.request();
+        atributos.forEach(attr => {
+            request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
+        });
+        const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
+        await request.query(query);
+        return { success: true, message: 'Datos insertados correctamente' };
+    }catch(err){
+        console.error("Error al insertar datos:", err);
+        return { success: false, message: 'Error al insertar datos', error: err.message };
+    }
 }
 
 // Funcion para actualizar datos

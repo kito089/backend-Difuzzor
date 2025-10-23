@@ -1,7 +1,7 @@
 // Código para manejar las rutas de /crud/
 
 import express from "express";
-import {seleccionarTodos , seleccionarId} from '../controllers/dbController.js';
+import {seleccionarTodos , seleccionarId, insertarDatos} from '../controllers/dbController.js';
 
 const router = express.Router();
 
@@ -38,7 +38,7 @@ router.get('/obtener/:tabla/:id', async (req, res) => {
 router.get('/insertar/:tabla', async (req, res) => {
     try {
         const datos = JSON.parse(decodeURIComponent(req.query.datos));
-        console.log(datos);
+        console.log("Datos recibidos: ",datos);
         const resultado = await insertarDatos(req.params.tabla, datos);
         res.json(resultado);
     } catch (err) {
