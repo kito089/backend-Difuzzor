@@ -59,8 +59,25 @@ export async function actualizarDatos(tabla, id, datos) {
     atributos.forEach(attr => {
         request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
     });
-    request.input(atributos[0], datos[0]); // Parametro para el ID
+    request.input(atributos[0], id); // Parametro para el ID
     const query = `UPDATE ${tabla} SET ${setClause} WHERE ${atributos[0]} = @${atributos[0]}`;
     await request.query(query);
     return { success: true, message: 'Datos actualizados correctamente' };
+}
+
+// Funcion para eliminar datos
+
+export async function eliminarDatos(tabla, id) {
+    try{
+        const pool = await poolPromise;
+        const atributos = await obtenerAtributos(tabla);
+        const request = pool.request();
+        request.input(atributos[0], id);
+        const query = `DELETE FROM ${tabla} WHERE ${atributos[0]} = @${atributos[0]}`;
+        await request.query(query);
+        return { success: true, message: 'Datos eliminados correctamente' };
+    }catch(err){
+        console.error("Error al eliminar datos:", err);
+        return { success: false, message: 'Error al eliminar datos', error: err.message };
+    }
 }

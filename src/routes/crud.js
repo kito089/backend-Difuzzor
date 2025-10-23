@@ -37,7 +37,8 @@ router.get('/obtener/:tabla/:id', async (req, res) => {
 
 router.get('/insertar/:tabla', async (req, res) => {
     try {
-        const datos = JSON.parse(decodeURIComponent(req.query.datos));
+        console.log("Insertando en tabla:", req.params.tabla);
+        const datos = req.query.datos;
         console.log("Datos recibidos: ",datos);
         const resultado = await insertarDatos(req.params.tabla, datos);
         res.json(resultado);
