@@ -1,19 +1,17 @@
-const { poolPromise } = require('../db'); // Importa la conexion a la base de datos
+// Importa la conexion a la base de datos
+import sql, { poolPromise } from '../db.js';
 
-async function seleccionarTodos(tabla) {
+export async function seleccionarTodos(tabla) {
     const pool = await poolPromise;
-    const result = await pool.request()
-    .input('tabla', tabla)
-    .query('SELECT * FROM @tabla');
+    const result = await pool.request().query(`SELECT * FROM ${tabla}`);
     return result.recordset;
 }
 
-async function seleccionarId(tabla, id) {
+export async function seleccionarId(tabla, id) {
     const pool = await poolPromise;
     const result = await pool.request()
-        .input('tabla', tabla)
         .input('id', id)
-        .query('SELECT * FROM @tabla WHERE id = @id');
+        .query(`SELECT * FROM ${tabla} WHERE id = @id`);
     return result.recordset[0] || null;
 }
 
@@ -21,8 +19,3 @@ async function seleccionarId(tabla, id) {
 // insertar datos
 // actualizar datos
 // eliminar datos
-
-module.exports = {
-    seleccionarTodos,
-    seleccionarId
-};

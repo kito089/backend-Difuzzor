@@ -1,6 +1,5 @@
-// Codigo que gestionara la conexion a la base de datos
-
-import sql  from 'mssql'; // conectar con bases de datos SQL Server
+// db.js
+import sql from 'mssql'; // conectar con bases de datos SQL Server
 
 const config = {
     user: process.env.DB_USER,
@@ -19,7 +18,7 @@ const config = {
     }
 };
 
-const poolPromise = new sql.ConnectionPool(config)
+export const poolPromise = new sql.ConnectionPool(config)
     .connect()
     .then(pool => {
         console.log('Conectado a la base de datos SQL');
@@ -27,4 +26,4 @@ const poolPromise = new sql.ConnectionPool(config)
     })
     .catch(err => console.log('Error al conectar a SQL', err));
 
-module.exports = { sql, poolPromise };
+export default sql;

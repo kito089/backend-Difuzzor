@@ -27,7 +27,7 @@ router.get("/obtener/:tabla", async (req, res) => {
 // Ruta: /crud/obtener/:tabla/:id
 router.get('/obtener/:tabla/:id', async (req, res) => {
     try {
-        const datos = await seleccionarId(req,params.tabla, req.params.id);
+        const datos = await seleccionarId(req.params.tabla, req.params.id);
         if (!datos) return res.status(404).send('Datos no encontrados');
         res.json(datos);
     } catch (err) {
