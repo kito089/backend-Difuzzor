@@ -35,9 +35,10 @@ router.get('/obtener/:tabla/:id', async (req, res) => {
     }
 });
 
-router.get('/insertar/:tabla/:datos', async (req, res) => {
+router.get('/insertar/:tabla', async (req, res) => {
     try {
-        const datos = JSON.parse(decodeURIComponent(req.params.datos));
+        const datos = JSON.parse(decodeURIComponent(req.query.datos));
+        console.log(datos);
         const resultado = await insertarDatos(req.params.tabla, datos);
         res.json(resultado);
     } catch (err) {
