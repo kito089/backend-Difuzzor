@@ -35,4 +35,15 @@ router.get('/obtener/:tabla/:id', async (req, res) => {
     }
 });
 
+router.get('/insertar/:tabla/:datos', async (req, res) => {
+    try {
+        const datos = JSON.parse(decodeURIComponent(req.params.datos));
+        const resultado = await insertarDatos(req.params.tabla, datos);
+        res.json(resultado);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error al insertar datos');
+    }
+});
+
 export default router;
