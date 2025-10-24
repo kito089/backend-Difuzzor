@@ -4,7 +4,7 @@ import sql, { poolPromise } from '../db.js';
 
 //Funcion para formatear datos
 function formatearDatos(datos) {
-    if (dato === null || dato === undefined) return [];
+    if (datos === null || datos === undefined) return [];
     if (Array.isArray(datos)) return datos;
     return [datos];
 }
