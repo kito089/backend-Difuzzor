@@ -44,6 +44,7 @@ export async function insertarDatos(tabla, datos) {
             request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
         });
         const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
+        console.log("Query de insercion:", query);
         await request.query(query);
         return { success: true, message: 'Datos insertados correctamente' };
     }catch(err){
@@ -64,6 +65,7 @@ export async function actualizarDatos(tabla, id, datos) {
     });
     request.input(atributos[0], id); // Parametro para el ID
     const query = `UPDATE ${tabla} SET ${setClause} WHERE ${atributos[0]} = @${atributos[0]}`;
+    console.log("Query de actualizacion:", query);
     await request.query(query);
     return { success: true, message: 'Datos actualizados correctamente' };
 }
