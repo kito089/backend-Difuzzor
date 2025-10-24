@@ -64,11 +64,11 @@ export async function insertarDatos(tabla, datos) {
 export async function actualizarDatos(tabla, id, datos) {
     const pool = await poolPromise;
     const atributos = await obtenerAtributos(tabla);
-    const setClause = atributos.map(attr => `${attr} = @${attr}`).join(', '); // Genera la clausula SET
+    const setClause = atributos.slice(1).map(attr => `${attr} = @${attr}`).join(', '); // Genera la clausula SET
     const datosFormateados = formatearDatos(datos);
     console.log("Datos formateados para actualizacion:", datosFormateados);
     const request = pool.request();
-    atributos.forEach((attr, i) => {
+    atributos.slice(1).forEach((attr, i) => {
         console.log("Asignando valor para:", attr, "Valor:", datosFormateados[i]);
         request.input(attr, datosFormateados[i]); // Asigna cada valor al parametro correspondiente
     }); // Parametro para el ID
