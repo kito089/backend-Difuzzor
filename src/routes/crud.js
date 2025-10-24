@@ -1,7 +1,7 @@
 // Código para manejar las rutas de /crud/
 
 import express from "express";
-import {seleccionarTodos , seleccionarId, insertarDatos} from '../controllers/dbController.js';
+import {seleccionarTodos , seleccionarId, insertarDatos, actualizarDatos, eliminarDatos} from '../controllers/dbController.js';
 
 const router = express.Router();
 

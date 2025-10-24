@@ -34,10 +34,13 @@ export async function insertarDatos(tabla, datos) {
     try{
         const pool = await poolPromise;
         const atributos = await obtenerAtributos(tabla);
-        const columnas = atributos.slice(1).join(', '); // @id nombre @nombre ds
+        console.log("Atributos de la tabla:", atributos);
+        const columnas = atributos.slice(1).join(', ');
+        console.log("Columnas para insertar:", columnas);
         const valores = atributos.slice(1).map(attr => `@${attr}`).join(', '); // Valores parametrizados (@id, @nombre, ...)
+        console.log("Valores para insertar:", valores);
         const request = pool.request();
-        atributos.forEach(attr => {
+        atributos.slice(1).forEach(attr => {
             request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
         });
         const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
