@@ -41,6 +41,7 @@ export async function insertarDatos(tabla, datos) {
         console.log("Valores para insertar:", valores);
         const request = pool.request();
         atributos.slice(1).forEach(attr => {
+            console.log("Asignando valor para:", attr, "Valor:", datos[attr]);
             request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
         });
         const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
@@ -61,6 +62,7 @@ export async function actualizarDatos(tabla, id, datos) {
     const setClause = atributos.map(attr => `${attr} = @${attr}`).join(', '); // Genera la clausula SET
     const request = pool.request();
     atributos.forEach(attr => {
+        console.log("Asignando valor para:", attr, "Valor:", datos[attr]);
         request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
     });
     request.input(atributos[0], id); // Parametro para el ID
