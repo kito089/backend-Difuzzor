@@ -2,6 +2,12 @@
 import e from 'express';
 import sql, { poolPromise } from '../db.js';
 
+//Funcion para formatear datos
+function formatearDatos(datos) {
+    if (dato === null || dato === undefined) return [];
+    if (Array.isArray(datos)) return datos;
+    return [datos];
+}
 // Funcion para obtener atributos de una tabla
 export async function obtenerAtributos(tabla) {
     const pool = await poolPromise;
@@ -34,15 +40,13 @@ export async function insertarDatos(tabla, datos) {
     try{
         const pool = await poolPromise;
         const atributos = await obtenerAtributos(tabla);
-        console.log("Atributos de la tabla:", atributos);
         const columnas = atributos.slice(1).join(', ');
-        console.log("Columnas para insertar:", columnas);
         const valores = atributos.slice(1).map(attr => `@${attr}`).join(', '); // Valores parametrizados (@id, @nombre, ...)
-        console.log("Valores para insertar:", valores);
+        const datosFormateados = formatearDatos(datos);
         const request = pool.request();
         atributos.slice(1).forEach((attr, i) => {
-            console.log("Asignando valor para:", attr, "Valor:", datos[i]);
-            request.input(attr, datos[i]); // Asigna cada valor al parametro correspondiente
+            console.log("Asignando valor para:", attr, "Valor:", datosFormateados[i]);
+            request.input(attr, datosFormateados[i]); // Asigna cada valor al parametro correspondiente
         });
         const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
         console.log("Query de insercion:", query);
@@ -60,13 +64,13 @@ export async function actualizarDatos(tabla, id, datos) {
     const pool = await poolPromise;
     const atributos = await obtenerAtributos(tabla);
     const setClause = atributos.map(attr => `${attr} = @${attr}`).join(', '); // Genera la clausula SET
+    const datosFormateados = formatearDatos(datos);
     const request = pool.request();
     atributos.forEach((attr, i) => {
-        console.log("Asignando valor para:", attr, "Valor:", datos[i]);
-        request.input(attr, datos[i]); // Asigna cada valor al parametro correspondiente
-    });
-    request.input(atributos[0], id); // Parametro para el ID
-    const query = `UPDATE ${tabla} SET ${setClause} WHERE ${atributos[0]} = @${atributos[0]}`;
+        console.log("Asignando valor para:", attr, "Valor:", datosFormateados[i]);
+        request.input(attr, datosFormateados[i]); // Asigna cada valor al parametro correspondiente
+    }); // Parametro para el ID
+    const query = `UPDATE ${tabla} SET ${setClause} WHERE ${atributos[0]} = ${id}`;
     console.log("Query de actualizacion:", query);
     await request.query(query);
     return { success: true, message: 'Datos actualizados correctamente' };
