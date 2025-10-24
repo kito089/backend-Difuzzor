@@ -40,9 +40,9 @@ export async function insertarDatos(tabla, datos) {
         const valores = atributos.slice(1).map(attr => `@${attr}`).join(', '); // Valores parametrizados (@id, @nombre, ...)
         console.log("Valores para insertar:", valores);
         const request = pool.request();
-        atributos.slice(1).forEach(attr => {
-            console.log("Asignando valor para:", attr, "Valor:", datos[attr]);
-            request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
+        atributos.slice(1).forEach((attr, i) => {
+            console.log("Asignando valor para:", attr, "Valor:", datos[i]);
+            request.input(attr, datos[i]); // Asigna cada valor al parametro correspondiente
         });
         const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
         console.log("Query de insercion:", query);
@@ -61,9 +61,9 @@ export async function actualizarDatos(tabla, id, datos) {
     const atributos = await obtenerAtributos(tabla);
     const setClause = atributos.map(attr => `${attr} = @${attr}`).join(', '); // Genera la clausula SET
     const request = pool.request();
-    atributos.forEach(attr => {
-        console.log("Asignando valor para:", attr, "Valor:", datos[attr]);
-        request.input(attr, datos[attr]); // Asigna cada valor al parametro correspondiente
+    atributos.forEach((attr, i) => {
+        console.log("Asignando valor para:", attr, "Valor:", datos[i]);
+        request.input(attr, datos[i]); // Asigna cada valor al parametro correspondiente
     });
     request.input(atributos[0], id); // Parametro para el ID
     const query = `UPDATE ${tabla} SET ${setClause} WHERE ${atributos[0]} = @${atributos[0]}`;
