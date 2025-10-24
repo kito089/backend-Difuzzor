@@ -48,4 +48,28 @@ router.get('/insertar/:tabla', async (req, res) => {
     }
 });
 
+router.get('/actualizar/:tabla/:id', async (req, res) => {
+    try {
+        console.log("Actualizando en tabla:", req.params.tabla, "ID:", req.params.id);
+        const datos = req.query.datos;
+        console.log("Datos recibidos: ", datos);
+        const resultado = await actualizarDatos(req.params.tabla, req.params.id, datos);
+        res.json(resultado);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error al actualizar datos');
+    }
+});
+
+router.get('/eliminar/:tabla/:id', async (req, res) => {
+    try {
+        console.log("Eliminando de tabla:", req.params.tabla, "ID:", req.params.id);
+        const resultado = await eliminarDatos(req.params.tabla, req.params.id);
+        res.json(resultado);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error al eliminar datos');
+    }
+});
+
 export default router;
