@@ -1,7 +1,7 @@
 // Código para manejar las rutas de /crud/
 
 import express from "express";
-import {seleccionarTodos , seleccionarId, insertarDatos, actualizarDatos, eliminarDatos} from '../controllers/dbController.js';
+import {seleccionarTodos , seleccionarId, insertarDatos, actualizarDatos, eliminarDatos, obtenerAtributos} from '../controllers/dbController.js';
 
 const router = express.Router();
 
@@ -69,6 +69,32 @@ router.get('/eliminar/:tabla/:id', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Error al eliminar datos');
+    }
+});
+
+router.get('/agregar/:tabla', async (req, res) => {
+    try {
+        console.log("Agregando a tabla:", req.params.tabla);
+        const atributos = obtenerAtributos(req.params.tabla);
+        console.log("Atributos recibidos: ", atributos);
+        res.json(atributos);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error al enviar atributo');
+    }
+});
+
+router.get('/modificar/:tabla/:id', async (req, res) => {
+    try {
+        console.log("Modificando en tabla:", req.params.tabla, "ID:", req.params.id);
+        const atributos = obtenerAtributos(req.params.tabla);
+        console.log("Atributos recibidos: ", atributos);
+        const datos = seleccionarId(req.params.tabla, req.params.id);
+        console.log("Datos recibidos: ", datos);
+        res.json({atributos, datos});;
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error al enviar atributo y datos');
     }
 });
 
