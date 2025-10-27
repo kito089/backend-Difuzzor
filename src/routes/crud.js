@@ -77,7 +77,7 @@ router.get('/eliminar/:tabla/:id', async (req, res) => {
 router.get('/atributos/:tabla', async (req, res) => {
     try {
         console.log("Agregando a tabla:", req.params.tabla);
-        const atributos = obtenerAtributos(req.params.tabla);
+        const atributos = await obtenerAtributos(req.params.tabla);
         console.log("Atributos recibidos: ", atributos);
         res.json({success: true, atributos: atributos});
     } catch (err) {
