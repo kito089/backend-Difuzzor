@@ -38,8 +38,9 @@ router.get('/obtener/:tabla/:id', async (req, res) => {
 router.get('/insertar/:tabla', async (req, res) => {
     try {
         console.log("Insertando en tabla:", req.params.tabla);
-        const datos = req.query.datos;
-        console.log("Datos recibidos: ",datos);
+        const datosStr = req.query.datos;
+        const datos = JSON.parse(datosStr);
+        console.log("Datos recibidos: ", datos);
         const resultado = await insertarDatos(req.params.tabla, datos);
         res.json(resultado);
     } catch (err) {
@@ -51,7 +52,8 @@ router.get('/insertar/:tabla', async (req, res) => {
 router.get('/actualizar/:tabla/:id', async (req, res) => {
     try {
         console.log("Actualizando en tabla:", req.params.tabla, "ID:", req.params.id);
-        const datos = req.query.datos;
+        const datosStr = req.query.datos;
+        const datos = JSON.parse(datosStr);
         console.log("Datos recibidos: ", datos);
         const resultado = await actualizarDatos(req.params.tabla, req.params.id, datos);
         res.json(resultado);
