@@ -16,7 +16,7 @@ router.get("/obtener/:tabla", async (req, res) => {
     try {
         const datos = await seleccionarTodos(req.params.tabla);
         if (!datos) return res.status(404).send('Tabla no encontrada');
-        res.json(datos);
+        res.json({success: true, datos: datos});
     } catch (err) {
         console.error(err);
         res.status(500).send('Error al obtener datos');
@@ -28,7 +28,7 @@ router.get('/obtener/:tabla/:id', async (req, res) => {
     try {
         const datos = await seleccionarId(req.params.tabla, req.params.id);
         if (!datos) return res.status(404).send('Datos no encontrados');
-        res.json(datos);
+        res.json({success: true, datos: datos});
     } catch (err) {
         console.error(err);
         res.status(500).send('Error al obtener datos');
@@ -72,29 +72,15 @@ router.get('/eliminar/:tabla/:id', async (req, res) => {
     }
 });
 
-router.get('/agregar/:tabla', async (req, res) => {
+router.get('/atributos/:tabla', async (req, res) => {
     try {
         console.log("Agregando a tabla:", req.params.tabla);
         const atributos = obtenerAtributos(req.params.tabla);
         console.log("Atributos recibidos: ", atributos);
-        res.json(atributos);
+        res.json({success: true, atributos: atributos});
     } catch (err) {
         console.error(err);
         res.status(500).send('Error al enviar atributo');
-    }
-});
-
-router.get('/modificar/:tabla/:id', async (req, res) => {
-    try {
-        console.log("Modificando en tabla:", req.params.tabla, "ID:", req.params.id);
-        const atributos = obtenerAtributos(req.params.tabla);
-        console.log("Atributos recibidos: ", atributos);
-        const datos = seleccionarId(req.params.tabla, req.params.id);
-        console.log("Datos recibidos: ", datos);
-        res.json({atributos, datos});;
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al enviar atributo y datos');
     }
 });
 
