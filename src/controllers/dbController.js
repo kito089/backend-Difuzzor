@@ -43,7 +43,7 @@ export async function insertarDatos(tabla, datos) {
         const atributos = await obtenerAtributos(tabla);
         const columnas = atributos.slice(1).join(', ');
         const valores = atributos.slice(1).map(attr => `@${attr}`).join(', '); // Valores parametrizados (@id, @nombre, ...)
-        const datosFormateados = formatearDatos(datos);
+        const datosFormateados = await formatearDatos(datos);
         console.log("Datos formateados para insercion:", datosFormateados);
         const request = pool.request();
         atributos.slice(1).forEach((attr, i) => {
@@ -66,7 +66,7 @@ export async function actualizarDatos(tabla, id, datos) {
     const pool = await poolPromise;
     const atributos = await obtenerAtributos(tabla);
     const setClause = atributos.slice(1).map(attr => `${attr} = @${attr}`).join(', '); // Genera la clausula SET
-    const datosFormateados = formatearDatos(datos);
+    const datosFormateados = await formatearDatos(datos);
     console.log("Datos formateados para actualizacion:", datosFormateados);
     const request = pool.request();
     atributos.slice(1).forEach((attr, i) => {
