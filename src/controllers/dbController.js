@@ -2,25 +2,28 @@
 import e from 'express';
 import sql, { poolPromise } from '../db.js';
 
-//Funcion para formatear datos y evitar inyecciones SQL
+//Funcion para formatear datos y evitar tomar un string como lista
 export async function formatearDatos(datos) {
     if (datos === null || datos === undefined) return [];
-    const pool = await poolPromise;
-    if (Array.isArray(datos)) return datos//pool.escape(datos);
-    return [datos]//[pool.escape(datos)];
+    if (Array.isArray(datos)) return datos
+    return [datos]
 }
+
 // Funcion para obtener atributos de una tabla
 export async function obtenerAtributos(tabla) {
     const pool = await poolPromise;
     const result = await pool.request()
-    .query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${tabla}'`);
+        .input('tabla', tabla)
+        .query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tabla');
     return result.recordset.map(row => row.COLUMN_NAME);
 }
 
 // Funcion para seleccionar todos los registros de una tabla
 export async function seleccionarTodos(tabla) {
     const pool = await poolPromise;
-    const result = await pool.request().query(`SELECT * FROM ${tabla}`);
+    const result = await pool.request()
+        .input('tabla', tabla)
+        .query('SELECT * FROM @tabla');
     return result.recordset;
 }
 
@@ -29,13 +32,13 @@ export async function seleccionarId(tabla, id) {
     const pool = await poolPromise;
     const atributos = await obtenerAtributos(tabla);
     const result = await pool.request()
+        .input('tabla', tabla)
         .input('id', id)
-        .query(`SELECT * FROM ${tabla} WHERE ${atributos[0]} = @id`);
+        .query(`SELECT * FROM @tabla WHERE ${atributos[0]} = @id`);
     return result.recordset[0] || null;
 }
 
 // Funcion para insertar datos
-
 export async function insertarDatos(tabla, datos) {
     console.log("Insertando en tabla:", tabla, "los datos:", datos);
     try{
@@ -45,12 +48,13 @@ export async function insertarDatos(tabla, datos) {
         const valores = atributos.slice(1).map(attr => `@${attr}`).join(', '); // Valores parametrizados (@id, @nombre, ...)
         const datosFormateados = await formatearDatos(datos);
         console.log("Datos formateados para insercion:", datosFormateados);
-        const request = pool.request();
+        const request = pool.request()
+            .input('tabla', tabla);
         atributos.slice(1).forEach((attr, i) => {
             console.log("Asignando valor para:", attr, "Valor:", datosFormateados[i]);
             request.input(attr, datosFormateados[i]); // Asigna cada valor al parametro correspondiente
         });
-        const query = `INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`;
+        const query = `INSERT INTO @tabla (${columnas}) VALUES (${valores})`;
         console.log("Query de insercion:", query);
         await request.query(query);
         return { success: true, message: 'Datos insertados correctamente' };
