@@ -141,7 +141,7 @@ router.post("/validateToken", async (req, res) => {
 router.post("/getUserInfo", async (req, res) => {
   try {
     console.log("Accediendo a /auth/getUserInfo");
-    const { accessToken } = req.body;
+    const { body: accessToken } = req.body; // Renombrar body a accessToken para claridad
 
     // 1. Validar que se proporcionó el accessToken
     if (!accessToken) {
@@ -175,7 +175,7 @@ router.post("/getUserInfo", async (req, res) => {
     }
 
     // 3. Extraer y formatear el ID del usuario
-    const userId = userInfo.id || userInfo.userPrincipalName;
+    const userId = userInfo.userPrincipalName;
     if (!userId) {
       return res.status(400).json({ 
         success: false, 
@@ -185,29 +185,38 @@ router.post("/getUserInfo", async (req, res) => {
 
     const formattedUserId = userId.replace("@utags.edu.mx", "");
     
-    // 4. Variables para manejar la foto
+    // 4. Verificar si el usuario ya existe en la base de datos
+    let existingUser = null;
+    try {
+      existingUser = await seleccionarId("Usuarios", formattedUserId);
+    } catch (dbError) {
+      console.warn("Error al buscar usuario en BD:", dbError.message);
+    }
+
+    // 5. Variables para manejar la foto
     let userPhotoUrl = null;
     let needsPhotoUpdate = false;
 
-    // 5. Intentar obtener la foto del perfil desde Microsoft Graph
-    try {
-      const photoResponse = await fetch(
-        "https://graph.microsoft.com/v1.0/me/photo/$value",
-        {
-          headers: { 
-            Authorization: `Bearer ${accessToken}` 
+    // 6. Intentar obtener y subir la foto del perfil solo si no existe o no tiene foto
+    if (!existingUser || !existingUser.foto) {
+      try {
+        // Obtener foto del perfil desde Microsoft Graph
+        const photoResponse = await fetch(
+          "https://graph.microsoft.com/v1.0/me/photo/$value",
+          {
+            headers: { 
+              Authorization: `Bearer ${accessToken}` 
+            }
           }
-        }
-      );
+        );
 
-      if (photoResponse.ok) {
-        const photoBuffer = await photoResponse.arrayBuffer();
-        
-        // 6. Subir la foto a OneDrive si es necesario
-        // (Asumiendo que tienes configurado folderId)
-        const folderId = "01Z35FUMZ2NRUW5RNULRB33IXQCKGNDNUP";
-        
-        if (folderId) {
+        if (photoResponse.ok) {
+          const photoBuffer = await photoResponse.arrayBuffer();
+          
+          // Subir la foto a OneDrive usando el mismo accessToken del usuario
+          // NOTA: Esto funcionará solo si el usuario tiene permisos para escribir en esa carpeta
+          const folderId = "01Z35FUMZ2NRUW5RNULRB33IXQCKGNDNUP";
+          
           try {
             const uploadResponse = await fetch(
               `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${formattedUserId}.jpg:/content`,
@@ -226,100 +235,110 @@ router.post("/getUserInfo", async (req, res) => {
               const uploadData = await uploadResponse.json();
               userPhotoUrl = uploadData["@microsoft.graph.downloadUrl"];
               needsPhotoUpdate = true;
+              console.log("Foto subida correctamente a OneDrive");
+            } else {
+              console.warn("No se pudo subir la foto a OneDrive:", uploadResponse.status);
             }
           } catch (uploadError) {
             console.warn("Error al subir la foto a OneDrive:", uploadError.message);
           }
+        } else {
+          console.warn("El usuario no tiene foto de perfil o no se pudo obtener");
         }
+      } catch (photoError) {
+        console.warn("No se pudo obtener la foto del usuario:", photoError.message);
       }
-    } catch (photoError) {
-      console.warn("No se pudo obtener la foto del usuario:", photoError.message);
+    } else {
+      // Usuario ya tiene foto, usar la existente
+      userPhotoUrl = existingUser.foto;
     }
 
-    // 7. Verificar si el usuario ya existe en la base de datos
-    let existingUser = null;
-    try {
-      existingUser = await seleccionarId("usuarios", formattedUserId);
-    } catch (dbError) {
-      console.warn("Error al buscar usuario en BD:", dbError.message);
-    }
-
-    // 8. Preparar datos para respuesta y posible inserción/actualización
+    // 7. Preparar datos del usuario
     const userData = {
       idUsuario: formattedUserId,
-      nombres: userInfo.givenName || "",
-      apellidos: userInfo.surname || "",
-      rol: "000", // Rol por defecto
-      foto: userPhotoUrl || (existingUser?.foto || null),
-      // Campos opcionales para actualización
-      correo: userInfo.userPrincipalName || userInfo.mail || "",
-      displayName: userInfo.displayName || "",
-      fechaActualizacion: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      Nombres: userInfo.givenName || "",
+      Apellidos: userInfo.surname || "",
+      Rol: "000",
+      foto: userPhotoUrl,
+      // Campos adicionales de la tabla (pueden ser null)
+      Descripcion: null,
+      Clubs_idClubs: null
     };
 
-    // 9. Lógica de inserción/actualización
+    // 8. Lógica de inserción/actualización
+    let operationResult = null;
+
     if (!existingUser) {
       // Caso 1: Usuario no existe - Insertar nuevo
-      console.log("Usuario no encontrado, insertando nuevo registro...");
+      console.log(`Usuario ${formattedUserId} no encontrado, insertando nuevo registro...`);
       try {
-        await insertarConIdDatos("usuarios", {
-          ...userData,
-          fechaRegistro: new Date().toISOString().slice(0, 19).replace('T', ' ')
-        });
-        console.log("Usuario insertado correctamente");
+        operationResult = await insertarConIdDatos("Usuarios", userData);
+        if (operationResult.success) {
+          console.log("Usuario insertado correctamente");
+        } else {
+          console.error("Error al insertar usuario:", operationResult.error);
+        }
       } catch (insertError) {
         console.error("Error al insertar usuario:", insertError.message);
-        // Continuar aunque falle la inserción para devolver datos al frontend
       }
     } else {
       // Caso 2: Usuario existe - Verificar si necesita actualización
       const needsUpdate = 
-        (userData.nombres && userData.nombres !== existingUser.nombres) ||
-        (userData.apellidos && userData.apellidos !== existingUser.apellidos) ||
-        (needsPhotoUpdate && userPhotoUrl !== existingUser.foto);
+        (userData.Nombres && userData.Nombres !== existingUser.Nombres) ||
+        (userData.Apellidos && userData.Apellidos !== existingUser.Apellidos) ||
+        (needsPhotoUpdate && userPhotoUrl && userPhotoUrl !== existingUser.foto);
 
       if (needsUpdate) {
-        console.log("Usuario desactualizado, actualizando registro...");
+        console.log(`Usuario ${formattedUserId} desactualizado, actualizando registro...`);
         
         const updateData = {};
-        if (userData.nombres && userData.nombres !== existingUser.nombres) {
-          updateData.nombres = userData.nombres;
+        if (userData.Nombres && userData.Nombres !== existingUser.Nombres) {
+          updateData.Nombres = userData.Nombres;
         }
-        if (userData.apellidos && userData.apellidos !== existingUser.apellidos) {
-          updateData.apellidos = userData.apellidos;
+        if (userData.Apellidos && userData.Apellidos !== existingUser.Apellidos) {
+          updateData.Apellidos = userData.Apellidos;
         }
         if (needsPhotoUpdate && userPhotoUrl) {
           updateData.foto = userPhotoUrl;
+          userData.foto = userPhotoUrl; // Actualizar userData para la respuesta
+        } else {
+          userData.foto = existingUser.foto; // Mantener la foto existente
         }
-        updateData.fechaActualizacion = userData.fechaActualizacion;
 
-        try {
-          await actualizarDatos("usuarios", formattedUserId, updateData);
-          
-          // Actualizar userData con los nuevos valores
-          userData.nombres = updateData.nombres || userData.nombres;
-          userData.apellidos = updateData.apellidos || userData.apellidos;
-          userData.foto = updateData.foto || userData.foto;
-          
-          console.log("Usuario actualizado correctamente");
-        } catch (updateError) {
-          console.error("Error al actualizar usuario:", updateError.message);
+        // Solo actualizar si hay campos que cambiar
+        if (Object.keys(updateData).length > 0) {
+          try {
+            operationResult = await actualizarDatos("Usuarios", formattedUserId, updateData);
+            if (operationResult.success) {
+              console.log("Usuario actualizado correctamente");
+            } else {
+              console.error("Error al actualizar usuario:", operationResult.error);
+            }
+          } catch (updateError) {
+            console.error("Error al actualizar usuario:", updateError.message);
+          }
+        } else {
+          console.log("No hay campos para actualizar");
+          userData.foto = existingUser.foto; // Asegurar que usamos la foto existente
         }
       } else {
         console.log("Usuario actualizado, no se requieren cambios");
-        // Si no necesita actualización, usar los datos existentes
+        // Usar los datos existentes para la respuesta
+        userData.Nombres = existingUser.Nombres;
+        userData.Apellidos = existingUser.Apellidos;
+        userData.Rol = existingUser.Rol;
         userData.foto = existingUser.foto;
       }
     }
 
-    // 10. Preparar respuesta para el frontend
+    // 9. Preparar respuesta para el frontend (solo campos requeridos)
     const responseData = {
       success: true,
       user: {
         idUsuario: userData.idUsuario,
-        nombres: userData.nombres,
-        apellidos: userData.apellidos,
-        rol: userData.rol,
+        nombres: userData.Nombres,
+        apellidos: userData.Apellidos,
+        rol: userData.Rol,
         foto: userData.foto
       }
     };
