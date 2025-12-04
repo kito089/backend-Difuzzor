@@ -1,74 +1,122 @@
-// Código para manejar las rutas de /crud/
+// Codigo para manejar las rutas de /crud/
 
 import express from "express";
-import {seleccionarTodos , seleccionarId, insertarDatos, actualizarDatos, eliminarDatos} from '../controllers/dbController.js';
+import {
+    seleccionarTodos,
+    seleccionarId,
+    insertarDatos,
+    actualizarDatos,
+    eliminarDatos
+} from '../controllers/dbController.js';
 
 const router = express.Router();
 
-// Ruta de prueba: /crud/
+// Ruta de prueba
 router.get("/", (req, res) => {
-  console.log("Accediendo a /crud/");
   res.send("Ruta de crud funcionando");
 });
 
-// Ruta: /crud/obtener/:tabla
-router.get("/obtener/:tabla", async (req, res) => {
+/* ----------------------------------------------------------
+   POST /crud/obtener/:tabla
+   Body esperado:
+   {}
+----------------------------------------------------------- */
+router.post("/obtener/:tabla", async (req, res) => {
     try {
-        const datos = await seleccionarTodos(req.params.tabla);
-        if (!datos) return res.status(404).send('Tabla no encontrada');
+        const tabla = req.params.tabla;
+        const datos = await seleccionarTodos(tabla);
+
         res.json(datos);
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al obtener datos');
+        console.error("Error en obtener todos:", err);
+        res.status(500).send("Error al obtener datos");
     }
 });
 
-// Ruta: /crud/obtener/:tabla/:id
-router.get('/obtener/:tabla/:id', async (req, res) => {
+/* ----------------------------------------------------------
+   POST /crud/obtenerId/:tabla
+   Body esperado:
+   { id:  }
+----------------------------------------------------------- */
+router.post("/obtenerId/:tabla", async (req, res) => {
     try {
-        const datos = await seleccionarId(req.params.tabla, req.params.id);
-        if (!datos) return res.status(404).send('Datos no encontrados');
+        const { id } = req.body;
+        const tabla = req.params.tabla;
+
+        if (!id) return res.status(400).send("Falta el id");
+
+        const datos = await seleccionarId(tabla, id);
+
+        if (!datos) return res.status(404).send("Registro no encontrado");
+
         res.json(datos);
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al obtener datos');
+        console.error("Error en obtener por id:", err);
+        res.status(500).send("Error al obtener datos");
     }
 });
 
-router.get('/insertar/:tabla', async (req, res) => {
+/* ----------------------------------------------------------
+   POST /crud/insertar/:tabla
+   Body esperado:
+   { datos: {...} }
+----------------------------------------------------------- */
+router.post("/insertar/:tabla", async (req, res) => {
     try {
-        console.log("Insertando en tabla:", req.params.tabla);
-        const datos = req.query.datos;
-        console.log("Datos recibidos: ",datos);
-        const resultado = await insertarDatos(req.params.tabla, datos);
+        const tabla = req.params.tabla;
+        const { datos } = req.body;
+
+        if (!datos) return res.status(400).send("Faltan los datos");
+
+        const resultado = await insertarDatos(tabla, datos);
         res.json(resultado);
+
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al insertar datos');
+        console.error("Error al insertar:", err);
+        res.status(500).send("Error al insertar datos");
     }
 });
 
-router.get('/actualizar/:tabla/:id', async (req, res) => {
+/* ----------------------------------------------------------
+   POST /crud/actualizar/:tabla
+   Body esperado:
+   { id: , datos: {...} }
+----------------------------------------------------------- */
+router.post("/actualizar/:tabla", async (req, res) => {
     try {
-        console.log("Actualizando en tabla:", req.params.tabla, "ID:", req.params.id);
-        const datos = req.query.datos;
-        console.log("Datos recibidos: ", datos);
-        const resultado = await actualizarDatos(req.params.tabla, req.params.id, datos);
+        const tabla = req.params.tabla;
+        const { id, datos } = req.body;
+
+        if (!id) return res.status(400).send("Falta el id");
+        if (!datos) return res.status(400).send("Faltan los datos");
+
+        const resultado = await actualizarDatos(tabla, id, datos);
         res.json(resultado);
+
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al actualizar datos');
+        console.error("Error al actualizar:", err);
+        res.status(500).send("Error al actualizar datos");
     }
 });
 
-router.get('/eliminar/:tabla/:id', async (req, res) => {
+/* ----------------------------------------------------------
+   POST /crud/eliminar/:tabla
+   Body esperado:
+   { id: }
+----------------------------------------------------------- */
+router.post("/eliminar/:tabla", async (req, res) => {
     try {
-        console.log("Eliminando de tabla:", req.params.tabla, "ID:", req.params.id);
-        const resultado = await eliminarDatos(req.params.tabla, req.params.id);
+        const tabla = req.params.tabla;
+        const { id } = req.body;
+
+        if (!id) return res.status(400).send("Falta el id");
+
+        const resultado = await eliminarDatos(tabla, id);
         res.json(resultado);
+
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al eliminar datos');
+        console.error("Error al eliminar:", err);
+        res.status(500).send("Error al eliminar datos");
     }
 });
 
