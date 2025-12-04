@@ -214,40 +214,43 @@ router.post("/getUserInfo", async (req, res) => {
           const photoBuffer = await photoResponse.arrayBuffer();
           const photoFile = Buffer.from(photoBuffer);
 
-          console.log("Foto obtenida desde Microsoft Graph, subiendo a EasyFileURL...");
+          console.log("Foto obtenida")
+          // Subir la foto a EASYFILEURL
+          
+          try {
+            const formData = new FormData();
+            formData.append("file", photoFile, `${formattedUserId}.jpg`);
 
-          const formData = new FormData();
-          formData.append("file", photoFile, `${formattedUserId}.jpg`);
+            const uploadResponse = await fetch(
+              "https://api.easyfileurl.com/upload",  // endpoint oficial
+              {
+                method: "POST",
+                body: formData
+              }
+            );
+              
 
-          const uploadResponse = await fetch(
-            "https://api.easyfileurl.com/upload",
-            {
-              method: "POST",
-              body: formData
-            }
-          );
+            if (uploadResponse.ok) {
+              const uploadData = await uploadResponse.json();
 
-          if (!uploadResponse.ok) {
-            console.warn("Error al subir la foto a EasyFileURL:", uploadResponse.status);
-          } else {
-            const uploadData = await uploadResponse.json();
-
-            // EasyFileURL devuelve:
-            // { success: true, url: "https://easyfileurl.com/xxxx" }
-
-            if (uploadData?.url) {
-              userPhotoUrl = uploadData.url;
-              needsPhotoUpdate = true;
-              console.log("Foto subida correctamente a EasyFileURL:", userPhotoUrl);
+              // EasyFileURL devuelve:
+              // { success: true, url: "https://easyfileurl.com/xxxx" }
+              if (uploadData?.url) {
+                userPhotoUrl = uploadData.url;
+                needsPhotoUpdate = true;
+                console.log("Foto subida correctamente a EasyFileURL:", userPhotoUrl);
+              } else {
+                console.log("Respuesta inesperada: ", uploadData)
+              }
             } else {
-              console.warn("Respuesta inesperada de EasyFileURL:", uploadData);
+              console.warn("No se pudo subir la foto a EasyFileURL:", uploadResponse.status);
             }
+          } catch (uploadError) {
+            console.warn("Error al subir la foto a EasyFileURL:", uploadError.message);
           }
-
         } else {
           console.warn("El usuario no tiene foto de perfil o no se pudo obtener");
         }
-
       } catch (photoError) {
         console.warn("No se pudo obtener la foto del usuario:", photoError.message);
       }
