@@ -195,7 +195,7 @@ router.post("/getUserInfo", async (req, res) => {
     }
 
     // 5. Variables para manejar la foto
-    let userPhotoUrl = null;
+    let userPhotoUrl = existingUser?.foto || null;
     let needsPhotoUpdate = false;
 
     // 6. Intentar obtener y subir la foto del perfil solo si no existe o no tiene foto
@@ -213,51 +213,48 @@ router.post("/getUserInfo", async (req, res) => {
 
         if (photoResponse.ok) {
           const photoBuffer = await photoResponse.arrayBuffer();
-          const photoFile = new Blob([photoBuffer], { type: "image/jpeg" });
-
-          console.log("Foto obtenida")
-          // Subir la foto a EASYFILEURL
           
+          // Subir la foto a EASYFILEURL
           try {
+            // Crear FormData para enviar el archivo
             const formData = new FormData();
-            formData.append("file", photoFile, `${formattedUserId}.jpg`);
+            // Convertir ArrayBuffer a Buffer para Node.js
+            const buffer = Buffer.from(photoBuffer);
+            // En Node.js, FormData.append puede aceptar un Buffer con opciones de filename
+            formData.append('file', buffer, { filename: `${formattedUserId}.jpg` });
 
             const uploadResponse = await fetch(
-              "https://api.easyfileurl.com/upload",  // endpoint oficial
+              "https://api.easyfileurl.com/upload",
               {
                 method: "POST",
                 body: formData
               }
             );
-              
 
             if (uploadResponse.ok) {
               const uploadData = await uploadResponse.json();
-
-              // EasyFileURL devuelve:
-              // { success: true, url: "https://easyfileurl.com/xxxx" }
-              if (uploadData?.url) {
+              // Asumimos que EasyFileURL devuelve { success: true, url: "..." }
+              if (uploadData.success && uploadData.url) {
                 userPhotoUrl = uploadData.url;
                 needsPhotoUpdate = true;
                 console.log("Foto subida correctamente a EasyFileURL:", userPhotoUrl);
               } else {
-                console.log("Respuesta inesperada: ", uploadData)
+                console.warn("EasyFileURL no devolvió una URL válida:", uploadData);
               }
             } else {
-              console.warn("No se pudo subir la foto a EasyFileURL:", uploadResponse.status);
+              console.warn("No se pudo subir la foto a EasyFileURL. Status:", uploadResponse.status);
+              const errorText = await uploadResponse.text();
+              console.warn("Error response:", errorText);
             }
           } catch (uploadError) {
             console.warn("Error al subir la foto a EasyFileURL:", uploadError.message);
           }
         } else {
-          console.warn("El usuario no tiene foto de perfil o no se pudo obtener");
+          console.warn("El usuario no tiene foto de perfil o no se pudo obtener. Status:", photoResponse.status);
         }
       } catch (photoError) {
         console.warn("No se pudo obtener la foto del usuario:", photoError.message);
       }
-    } else {
-      // Usuario ya tiene foto, usar la existente
-      userPhotoUrl = existingUser.foto;
     }
 
     // 7. Preparar datos del usuario
@@ -273,13 +270,11 @@ router.post("/getUserInfo", async (req, res) => {
     };
 
     // 8. Lógica de inserción/actualización
-    let operationResult = null;
-
     if (!existingUser) {
       // Caso 1: Usuario no existe - Insertar nuevo
       console.log(`Usuario ${formattedUserId} no encontrado, insertando nuevo registro...`);
       try {
-        operationResult = await insertarConIdDatos("Usuarios", userData);
+        const operationResult = await insertarConIdDatos("Usuarios", userData);
         if (operationResult.success) {
           console.log("Usuario insertado correctamente");
         } else {
@@ -307,15 +302,12 @@ router.post("/getUserInfo", async (req, res) => {
         }
         if (needsPhotoUpdate && userPhotoUrl) {
           updateData.foto = userPhotoUrl;
-          userData.foto = userPhotoUrl; // Actualizar userData para la respuesta
-        } else {
-          userData.foto = existingUser.foto; // Mantener la foto existente
         }
 
         // Solo actualizar si hay campos que cambiar
         if (Object.keys(updateData).length > 0) {
           try {
-            operationResult = await actualizarDatos("Usuarios", formattedUserId, updateData);
+            const operationResult = await actualizarDatos("Usuarios", formattedUserId, updateData);
             if (operationResult.success) {
               console.log("Usuario actualizado correctamente");
             } else {
@@ -326,11 +318,13 @@ router.post("/getUserInfo", async (req, res) => {
           }
         } else {
           console.log("No hay campos para actualizar");
-          userData.foto = existingUser.foto; // Asegurar que usamos la foto existente
         }
       } else {
         console.log("Usuario actualizado, no se requieren cambios");
-        // Usar los datos existentes para la respuesta
+      }
+      
+      // Asegurar que userData tenga los datos existentes si no se actualizaron
+      if (!needsUpdate) {
         userData.Nombres = existingUser.Nombres;
         userData.Apellidos = existingUser.Apellidos;
         userData.Rol = existingUser.Rol;
