@@ -3,7 +3,6 @@
 import express from "express";
 import fetch from "node-fetch";
 import { seleccionarId, insertarConIdDatos } from "../controllers/dbController.js";
-import { FormData } from "form-data";
 
 const router = express.Router();
 
