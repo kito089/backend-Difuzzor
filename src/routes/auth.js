@@ -140,6 +140,7 @@ router.post("/validateToken", async (req, res) => {
 router.post("/getUserInfo", async (req, res) => {
   try {
     console.log("Accediendo a /auth/getUserInfo");
+    console.log("Cuerpo recibido:", req.body);
     const { accessToken } = req.body.body;
 
     // 1. Validar que se proporcionó el accessToken
