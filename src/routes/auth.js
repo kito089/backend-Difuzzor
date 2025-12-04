@@ -2,7 +2,7 @@
 
 import express from "express";
 import fetch from "node-fetch";
-import { seleccionarId, insertarConIdDatos } from "../controllers/dbController";
+import { seleccionarId, insertarConIdDatos } from "../controllers/dbController.js";
 
 const router = express.Router();
 
