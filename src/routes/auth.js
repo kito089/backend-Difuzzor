@@ -3,7 +3,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import { seleccionarId, insertarConIdDatos } from "../controllers/dbController.js";
-const axios = require("axios");
+import axios from "axios";
 
 const router = express.Router();
 
@@ -160,55 +160,63 @@ router.post("/getUserInfo", async (req, res) => {
     console.log("Accediendo a /auth/getUserInfo");
     const { body } = req.body;
 
-    if (!body) {
-      return res.status(400).json({ success: false, message: "accessToken is required" });
-    }
+    userData = seleccionarId("usuarios", userInfo.id.replace("@utags.edu.mx", ""));    
+    if (!userData) {
+      if (!body) {
+        return res.status(400).json({ success: false, message: "accessToken is required" });
+      }
 
-    // 1. Obtener información del usuario
-    const response = await fetch("https://graph.microsoft.com/v1.0/me", {
-      headers: {
-        Authorization: `Bearer ${body}`,
-        "Content-Type": "application/json",
-      },
-    });
+      // 1. Obtener información del usuario
+      const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+        headers: {
+          Authorization: `Bearer ${body}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-    const userInfo = await response.json();
+      const userInfo = await response.json();
+      try {
+        const photo = await axios.get(
+          "https://graph.microsoft.com/v1.0/me/photo/$value",
+          {
+            responseType: "arraybuffer",
+            headers: { Authorization: `Bearer ${accessToken}` }
+          }
+        );
 
-    // 2. Obtener foto de perfil
-    let photoBase64 = null;
-    try {
-      const photo = await axios.get(
-        "https://graph.microsoft.com/v1.0/me/photo/$value",
+        const photoBuffer = Buffer.from(photo.data);
+
+      } catch (photoError) {
+        console.warn("No se pudo obtener la foto del usuario (puede no existir).");
+      }
+      // guardar foto en drive
+      const upload = await axios.put(
+        `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${userInfo.id.replace("@utags.edu.mx", "")}:/content`,
+        photoBuffer,
         {
-          responseType: "arraybuffer",
-          headers: { Authorization: `Bearer ${body}` },
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "image/jpeg"
+          }
         }
       );
-
-      photoBase64 = Buffer.from(photo.data, "binary").toString("base64");
-      userInfo.photo = `data:image/jpeg;base64,${photoBase64}`;
-
-    } catch (photoError) {
-      console.warn("No se pudo obtener la foto del usuario (puede no existir).");
-      userInfo.photo = null; // mejor que undefined
-    }
-
-    userData = seleccionarId("usuarios", userInfo.id.replace("@utags.edu.mx", ""));
-    if (!userData) {
-      // guardar foto en drive
-
+      userInfo.foto = upload.data["@microsoft.graph.downloadUrl"] || null;
       console.log("Usuario no encontrado en la base de datos, insertando nuevo usuario...");
       await insertarConIdDatos("usuarios", {
         idUsuario: userInfo.id.replace("@utags.edu.mx", ""),
         nombres: userInfo.givenName,
         apellidos: userInfo.surname,
-        rol: "000"
+        rol: "000",
+        foto: userInfo.foto
       });
-    }
+    }else {
+      console.log("Usuario encontrado en la base de datos.");
+      userInfo = seleccionarId("usuarios", userData.id.replace("@utags.edu.mx", ""));
+    } 
 
     return res.json({ success: true, user: userInfo });
 
