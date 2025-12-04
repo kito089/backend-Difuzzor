@@ -7,7 +7,7 @@ import axios from "axios";
 
 const router = express.Router();
 
-const scopes = ['openid', 'profile', 'email', 'offline_access', 'User.Read', 'Files.ReadWrite', 'Sites.Read.All', 'Files.Read'];
+const scopes = ['openid', 'profile', 'email', 'offline_access', 'User.Read'];
 
 // Ruta de prueba: /auth/
 router.get("/", (req, res) => {
