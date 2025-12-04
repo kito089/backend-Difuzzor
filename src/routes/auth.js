@@ -136,54 +136,11 @@ router.post("/validateToken", async (req, res) => {
   }
 });
 
-const uploadPhotoToEasyFileUrl = async (photoBuffer, fileName) => {
-  try {
-    const formData = new FormData();
-    // En Node.js, append recibe (key, value, options) donde value puede ser Buffer
-    formData.append('file', photoBuffer, {
-      filename: fileName,
-      contentType: 'image/jpeg'
-    });
-
-    console.log("Subiendo foto a EasyFileURL...");
-    
-    const uploadResponse = await fetch(
-      "https://api.easyfileurl.com/upload",
-      {
-        method: "POST",
-        body: formData,
-        // En Node.js, fetch con form-data necesita los headers que form-data provee
-        headers: formData.getHeaders()
-      }
-    );
-
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error("Error en respuesta de EasyFileURL:", uploadResponse.status, errorText);
-      return null;
-    }
-
-    const uploadData = await uploadResponse.json();
-    console.log("Respuesta de EasyFileURL:", uploadData);
-    
-    if (uploadData && uploadData.url) {
-      console.log("Foto subida exitosamente. URL:", uploadData.url);
-      return uploadData.url;
-    } else {
-      console.error("Respuesta de EasyFileURL no contiene URL:", uploadData);
-      return null;
-    }
-  } catch (uploadError) {
-    console.error("Error al subir foto a EasyFileURL:", uploadError.message);
-    return null;
-  }
-}
-
 // Ruta: /auth/getUserInfo
 router.post("/getUserInfo", async (req, res) => {
   try {
     console.log("Accediendo a /auth/getUserInfo");
-    const { accessToken } = req.body;
+    const { accessToken } = req.body.body;
 
     // 1. Validar que se proporcionó el accessToken
     if (!accessToken) {
