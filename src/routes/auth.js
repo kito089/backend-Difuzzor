@@ -53,23 +53,6 @@ router.post("/CodeForToken", async (req, res) => {
     const tokenData = JSON.parse(responseText);
     console.log("Token recibido exitosamente desde Azure");
 
-    const base64 = Buffer.from("https://524499105000-my.sharepoint.com/:f:/g/personal/240386_utags_edu_mx/EjpsaW7FtFxDvaLwEozRto8Bd1G285R5N-uJkv6MjWLJ-Q?e=FbT2gm", 'utf8').toString('base64');
-
-    const shareId = "u!" + base64
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-    console.log("Share ID generado:", shareId);
-    const url = `https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem`;
-
-    const folder = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-      },
-    });
-
-    console.log("Carpeta obtenida:", folder.data);
-
     return res.json({
       success: true,
       access_token: tokenData.access_token,
@@ -155,7 +138,6 @@ router.post("/validateToken", async (req, res) => {
 });
 
 // Ruta: /auth/getUserInfo
-// Ruta: /auth/getUserInfo
 router.post("/getUserInfo", async (req, res) => {
   try {
     console.log("Accediendo a /auth/getUserInfo");
@@ -223,7 +205,7 @@ router.post("/getUserInfo", async (req, res) => {
         
         // 6. Subir la foto a OneDrive si es necesario
         // (Asumiendo que tienes configurado folderId)
-        const folderId = "";
+        const folderId = "01Z35FUMZ2NRUW5RNULRB33IXQCKGNDNUP";
         
         if (folderId) {
           try {
