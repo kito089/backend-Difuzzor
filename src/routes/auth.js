@@ -3,7 +3,8 @@
 import express from "express";
 import fetch from "node-fetch";
 import { seleccionarId, insertarConIdDatos } from "../controllers/dbController.js";
-import axios from "axios";
+import { Blob } from 'fetch-blob';
+import { FormData } from "formdata-node";
 
 const router = express.Router();
 
@@ -212,7 +213,7 @@ router.post("/getUserInfo", async (req, res) => {
 
         if (photoResponse.ok) {
           const photoBuffer = await photoResponse.arrayBuffer();
-          const photoFile = Buffer.from(photoBuffer);
+          const photoFile = new Blob([photoBuffer], { type: "image/jpeg" });
 
           console.log("Foto obtenida")
           // Subir la foto a EASYFILEURL
