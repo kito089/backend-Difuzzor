@@ -3,6 +3,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import { seleccionarId, insertarConIdDatos } from "../controllers/dbController.js";
+const axios = require("axios");
 
 const router = express.Router();
 
@@ -198,6 +199,8 @@ router.post("/getUserInfo", async (req, res) => {
 
     userData = seleccionarId("usuarios", userInfo.id.replace("@utags.edu.mx", ""));
     if (!userData) {
+      // guardar foto en drive
+
       console.log("Usuario no encontrado en la base de datos, insertando nuevo usuario...");
       await insertarConIdDatos("usuarios", {
         idUsuario: userInfo.id.replace("@utags.edu.mx", ""),
