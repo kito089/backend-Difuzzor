@@ -88,6 +88,33 @@ export async function insertarDatos(tabla, datos) {
 }
 
 /* ---------------------------------------------------------
+   Insertar con ID datos
+--------------------------------------------------------- */
+
+export async function insertarConIdDatos(tabla, datos) {
+    try {
+        const pool = poolPromise;
+        const atributos = await obtenerAtributos(tabla);
+        const placeholders = atributos.map(() => '?').join(', ');
+
+        const valores = atributos.map(col => datos[col]);
+
+        const sql = `
+            INSERT INTO \`${tabla}\` (${atributos.join(', ')})
+            VALUES (${placeholders})
+        `;
+
+        await pool.query(sql, valores);
+
+        return { success: true, message: "Datos insertados correctamente" };
+
+    } catch (err) {
+        console.error("Error al insertar datos con ID:", err);
+        return { success: false, error: err.message };
+    }
+}
+
+/* ---------------------------------------------------------
    Actualizar datos
 --------------------------------------------------------- */
 export async function actualizarDatos(tabla, id, datos) {

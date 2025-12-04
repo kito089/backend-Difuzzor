@@ -2,6 +2,7 @@
 
 import express from "express";
 import fetch from "node-fetch";
+import { seleccionarId, insertarConIdDatos } from "../controllers/dbController";
 
 const router = express.Router();
 
@@ -50,6 +51,24 @@ router.post("/CodeForToken", async (req, res) => {
 
     const tokenData = JSON.parse(responseText);
     console.log("Token recibido exitosamente desde Azure");
+
+    const base64 = Buffer.from("https://524499105000-my.sharepoint.com/:f:/g/personal/240386_utags_edu_mx/EjpsaW7FtFxDvaLwEozRto8Bd1G285R5N-uJkv6MjWLJ-Q?e=kOdHtB", 'utf8').toString('base64');
+
+      // OneDrive requiere URL-safe base64
+      shareId = "u!" + base64
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+    const url = `https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem`;
+
+    const folder = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    console.log("Carpeta obtenida:", folder.data);
 
     return res.json({
       success: true,
@@ -145,6 +164,7 @@ router.post("/getUserInfo", async (req, res) => {
       return res.status(400).json({ success: false, message: "accessToken is required" });
     }
 
+    // 1. Obtener información del usuario
     const response = await fetch("https://graph.microsoft.com/v1.0/me", {
       headers: {
         Authorization: `Bearer ${body}`,
@@ -157,7 +177,39 @@ router.post("/getUserInfo", async (req, res) => {
     }
 
     const userInfo = await response.json();
+
+    // 2. Obtener foto de perfil
+    let photoBase64 = null;
+    try {
+      const photo = await axios.get(
+        "https://graph.microsoft.com/v1.0/me/photo/$value",
+        {
+          responseType: "arraybuffer",
+          headers: { Authorization: `Bearer ${body}` },
+        }
+      );
+
+      photoBase64 = Buffer.from(photo.data, "binary").toString("base64");
+      userInfo.photo = `data:image/jpeg;base64,${photoBase64}`;
+
+    } catch (photoError) {
+      console.warn("No se pudo obtener la foto del usuario (puede no existir).");
+      userInfo.photo = null; // mejor que undefined
+    }
+
+    userData = seleccionarId("usuarios", userInfo.id.replace("@utags.edu.mx", ""));
+    if (!userData) {
+      console.log("Usuario no encontrado en la base de datos, insertando nuevo usuario...");
+      await insertarConIdDatos("usuarios", {
+        idUsuario: userInfo.id.replace("@utags.edu.mx", ""),
+        nombres: userInfo.givenName,
+        apellidos: userInfo.surname,
+        rol: "000"
+      });
+    }
+
     return res.json({ success: true, user: userInfo });
+
   } catch (error) {
     console.error("Error obteniendo información del usuario:", error);
     return res.json({ success: false, error: error.message });
