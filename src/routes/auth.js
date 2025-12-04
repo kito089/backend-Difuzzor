@@ -53,7 +53,7 @@ router.post("/CodeForToken", async (req, res) => {
     const tokenData = JSON.parse(responseText);
     console.log("Token recibido exitosamente desde Azure");
 
-    const base64 = Buffer.from("https://524499105000-my.sharepoint.com/:f:/g/personal/240386_utags_edu_mx/EjpsaW7FtFxDvaLwEozRto8Bd1G285R5N-uJkv6MjWLJ-Q?e=kOdHtB", 'utf8').toString('base64');
+    const base64 = Buffer.from("https://524499105000-my.sharepoint.com/:f:/g/personal/240386_utags_edu_mx/EjpsaW7FtFxDvaLwEozRto8Bd1G285R5N-uJkv6MjWLJ-Q?e=FbT2gm", 'utf8').toString('base64');
 
     const shareId = "u!" + base64
         .replace(/\+/g, '-')
@@ -155,74 +155,202 @@ router.post("/validateToken", async (req, res) => {
 });
 
 // Ruta: /auth/getUserInfo
+// Ruta: /auth/getUserInfo
 router.post("/getUserInfo", async (req, res) => {
   try {
     console.log("Accediendo a /auth/getUserInfo");
-    const { body } = req.body;
+    const { accessToken } = req.body;
 
-    userData = seleccionarId("usuarios", userInfo.id.replace("@utags.edu.mx", ""));    
-    if (!userData) {
-      if (!body) {
-        return res.status(400).json({ success: false, message: "accessToken is required" });
-      }
+    // 1. Validar que se proporcionó el accessToken
+    if (!accessToken) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "accessToken es requerido" 
+      });
+    }
 
-      // 1. Obtener información del usuario
-      const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+    // 2. Obtener información del usuario desde Microsoft Graph
+    let userInfo;
+    try {
+      const userResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
         headers: {
-          Authorization: `Bearer ${body}`,
+          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      if (!userResponse.ok) {
+        throw new Error(`HTTP ${userResponse.status}: ${await userResponse.text()}`);
       }
 
-      const userInfo = await response.json();
-      try {
-        const photo = await axios.get(
-          "https://graph.microsoft.com/v1.0/me/photo/$value",
-          {
-            responseType: "arraybuffer",
-            headers: { Authorization: `Bearer ${accessToken}` }
-          }
-        );
+      userInfo = await userResponse.json();
+    } catch (graphError) {
+      console.error("Error al obtener información de Microsoft Graph:", graphError);
+      return res.status(401).json({ 
+        success: false, 
+        message: "No se pudo autenticar con Microsoft Graph" 
+      });
+    }
 
-        const photoBuffer = Buffer.from(photo.data);
+    // 3. Extraer y formatear el ID del usuario
+    const userId = userInfo.id || userInfo.userPrincipalName;
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "No se pudo obtener el ID del usuario" 
+      });
+    }
 
-      } catch (photoError) {
-        console.warn("No se pudo obtener la foto del usuario (puede no existir).");
-      }
-      // guardar foto en drive
-      const upload = await axios.put(
-        `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${userInfo.id.replace("@utags.edu.mx", "")}:/content`,
-        photoBuffer,
+    const formattedUserId = userId.replace("@utags.edu.mx", "");
+    
+    // 4. Variables para manejar la foto
+    let userPhotoUrl = null;
+    let needsPhotoUpdate = false;
+
+    // 5. Intentar obtener la foto del perfil desde Microsoft Graph
+    try {
+      const photoResponse = await fetch(
+        "https://graph.microsoft.com/v1.0/me/photo/$value",
         {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "image/jpeg"
+          headers: { 
+            Authorization: `Bearer ${accessToken}` 
           }
         }
       );
-      userInfo.foto = upload.data["@microsoft.graph.downloadUrl"] || null;
-      console.log("Usuario no encontrado en la base de datos, insertando nuevo usuario...");
-      await insertarConIdDatos("usuarios", {
-        idUsuario: userInfo.id.replace("@utags.edu.mx", ""),
-        nombres: userInfo.givenName,
-        apellidos: userInfo.surname,
-        rol: "000",
-        foto: userInfo.foto
-      });
-    }else {
-      console.log("Usuario encontrado en la base de datos.");
-      userInfo = seleccionarId("usuarios", userData.id.replace("@utags.edu.mx", ""));
-    } 
 
-    return res.json({ success: true, user: userInfo });
+      if (photoResponse.ok) {
+        const photoBuffer = await photoResponse.arrayBuffer();
+        
+        // 6. Subir la foto a OneDrive si es necesario
+        // (Asumiendo que tienes configurado folderId)
+        const folderId = "";
+        
+        if (folderId) {
+          try {
+            const uploadResponse = await fetch(
+              `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${formattedUserId}.jpg:/content`,
+              {
+                method: "PUT",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "image/jpeg",
+                  "Content-Length": photoBuffer.byteLength.toString()
+                },
+                body: Buffer.from(photoBuffer)
+              }
+            );
+
+            if (uploadResponse.ok) {
+              const uploadData = await uploadResponse.json();
+              userPhotoUrl = uploadData["@microsoft.graph.downloadUrl"];
+              needsPhotoUpdate = true;
+            }
+          } catch (uploadError) {
+            console.warn("Error al subir la foto a OneDrive:", uploadError.message);
+          }
+        }
+      }
+    } catch (photoError) {
+      console.warn("No se pudo obtener la foto del usuario:", photoError.message);
+    }
+
+    // 7. Verificar si el usuario ya existe en la base de datos
+    let existingUser = null;
+    try {
+      existingUser = await seleccionarId("usuarios", formattedUserId);
+    } catch (dbError) {
+      console.warn("Error al buscar usuario en BD:", dbError.message);
+    }
+
+    // 8. Preparar datos para respuesta y posible inserción/actualización
+    const userData = {
+      idUsuario: formattedUserId,
+      nombres: userInfo.givenName || "",
+      apellidos: userInfo.surname || "",
+      rol: "000", // Rol por defecto
+      foto: userPhotoUrl || (existingUser?.foto || null),
+      // Campos opcionales para actualización
+      correo: userInfo.userPrincipalName || userInfo.mail || "",
+      displayName: userInfo.displayName || "",
+      fechaActualizacion: new Date().toISOString().slice(0, 19).replace('T', ' ')
+    };
+
+    // 9. Lógica de inserción/actualización
+    if (!existingUser) {
+      // Caso 1: Usuario no existe - Insertar nuevo
+      console.log("Usuario no encontrado, insertando nuevo registro...");
+      try {
+        await insertarConIdDatos("usuarios", {
+          ...userData,
+          fechaRegistro: new Date().toISOString().slice(0, 19).replace('T', ' ')
+        });
+        console.log("Usuario insertado correctamente");
+      } catch (insertError) {
+        console.error("Error al insertar usuario:", insertError.message);
+        // Continuar aunque falle la inserción para devolver datos al frontend
+      }
+    } else {
+      // Caso 2: Usuario existe - Verificar si necesita actualización
+      const needsUpdate = 
+        (userData.nombres && userData.nombres !== existingUser.nombres) ||
+        (userData.apellidos && userData.apellidos !== existingUser.apellidos) ||
+        (needsPhotoUpdate && userPhotoUrl !== existingUser.foto);
+
+      if (needsUpdate) {
+        console.log("Usuario desactualizado, actualizando registro...");
+        
+        const updateData = {};
+        if (userData.nombres && userData.nombres !== existingUser.nombres) {
+          updateData.nombres = userData.nombres;
+        }
+        if (userData.apellidos && userData.apellidos !== existingUser.apellidos) {
+          updateData.apellidos = userData.apellidos;
+        }
+        if (needsPhotoUpdate && userPhotoUrl) {
+          updateData.foto = userPhotoUrl;
+        }
+        updateData.fechaActualizacion = userData.fechaActualizacion;
+
+        try {
+          await actualizarDatos("usuarios", formattedUserId, updateData);
+          
+          // Actualizar userData con los nuevos valores
+          userData.nombres = updateData.nombres || userData.nombres;
+          userData.apellidos = updateData.apellidos || userData.apellidos;
+          userData.foto = updateData.foto || userData.foto;
+          
+          console.log("Usuario actualizado correctamente");
+        } catch (updateError) {
+          console.error("Error al actualizar usuario:", updateError.message);
+        }
+      } else {
+        console.log("Usuario actualizado, no se requieren cambios");
+        // Si no necesita actualización, usar los datos existentes
+        userData.foto = existingUser.foto;
+      }
+    }
+
+    // 10. Preparar respuesta para el frontend
+    const responseData = {
+      success: true,
+      user: {
+        idUsuario: userData.idUsuario,
+        nombres: userData.nombres,
+        apellidos: userData.apellidos,
+        rol: userData.rol,
+        foto: userData.foto
+      }
+    };
+
+    return res.json(responseData);
 
   } catch (error) {
-    console.error("Error obteniendo información del usuario:", error);
-    return res.json({ success: false, error: error.message });
+    console.error("Error crítico en /auth/getUserInfo:", error);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      message: "Error interno del servidor" 
+    });
   }
 });
 
