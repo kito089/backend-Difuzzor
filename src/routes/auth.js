@@ -54,12 +54,11 @@ router.post("/CodeForToken", async (req, res) => {
 
     const base64 = Buffer.from("https://524499105000-my.sharepoint.com/:f:/g/personal/240386_utags_edu_mx/EjpsaW7FtFxDvaLwEozRto8Bd1G285R5N-uJkv6MjWLJ-Q?e=kOdHtB", 'utf8').toString('base64');
 
-      // OneDrive requiere URL-safe base64
-      shareId = "u!" + base64
+    const shareId = "u!" + base64
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
-
+    console.log("Share ID generado:", shareId);
     const url = `https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem`;
 
     const folder = await axios.get(url, {
