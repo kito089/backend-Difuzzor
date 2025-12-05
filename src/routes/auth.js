@@ -184,7 +184,7 @@ router.post("/getUserInfo", async (req, res) => {
     }
 
     const formattedUserId = userId.replace("@utags.edu.mx", "");
-    
+    console.log("Usuario autenticado:", formattedUserId);
     // 4. Verificar si el usuario ya existe en la base de datos
     let existingUser = null;
     try {
