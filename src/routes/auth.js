@@ -189,6 +189,7 @@ router.post("/getUserInfo", async (req, res) => {
     let existingUser = null;
     try {
       existingUser = await seleccionarId("Usuarios", formattedUserId);
+      console.log("Usuario existente en BD:", existingUser);
     } catch (dbError) {
       console.warn("Error al buscar usuario en BD:", dbError.message);
     }
@@ -227,7 +228,7 @@ router.post("/getUserInfo", async (req, res) => {
             formData.append('visibility', 'public');
             formData.append('permanent', 'false');
 
-            const easyFileUrl = 'https://easyfileurl.com/api/v1/files'; // URL de la API de Easy File URL
+            const easyFileUrl = ''//'https://easyfileurl.com/api/v1/files'; // URL de la API de Easy File URL
             const apiKey = process.env.EASYFILEURL_API_KEY;
             
             const uploadResponse = await fetch(easyFileUrl, {
@@ -241,6 +242,7 @@ router.post("/getUserInfo", async (req, res) => {
 
             if (uploadResponse.ok) {
               const uploadData = await uploadResponse.json();
+              console.log("Respuesta de Easy File URL:", uploadData);
               
               // La respuesta de Easy File URL generalmente contiene la URL del archivo subido
               // Ajusta según la estructura de respuesta real de la API
@@ -298,6 +300,9 @@ router.post("/getUserInfo", async (req, res) => {
         console.error("Error al insertar usuario:", insertError.message);
       }
     } else {
+      userData.Rol = existingUser.Rol;
+      userData.Descripcion = existingUser.Descripcion;
+      userData.Clubs_idClubs = existingUser.Clubs_idClubs;
       const needsUpdate = 
         (userData.Nombres && userData.Nombres !== existingUser.Nombres) ||
         (userData.Apellidos && userData.Apellidos !== existingUser.Apellidos) ||
@@ -313,7 +318,7 @@ router.post("/getUserInfo", async (req, res) => {
         if (userData.Apellidos && userData.Apellidos !== existingUser.Apellidos) {
           updateData.Apellidos = userData.Apellidos;
         }
-        if (needsPhotoUpdate && userPhotoUrl) {
+        if (needsPhotoUpdate && userPhotoUrl) { // actualizar bien la foto
           updateData.foto = userPhotoUrl;
           userData.foto = userPhotoUrl;
         } else {
@@ -339,7 +344,6 @@ router.post("/getUserInfo", async (req, res) => {
         console.log("Usuario actualizado, no se requieren cambios");
         userData.Nombres = existingUser.Nombres;
         userData.Apellidos = existingUser.Apellidos;
-        userData.Rol = existingUser.Rol;
         userData.foto = existingUser.foto;
       }
     }
@@ -352,6 +356,8 @@ router.post("/getUserInfo", async (req, res) => {
         nombres: userData.Nombres,
         apellidos: userData.Apellidos,
         rol: userData.Rol,
+        descripcion: userData.Descripcion,
+        clubs_idClubs: userData.Clubs_idClubs,
         foto: userData.foto
       }
     };
