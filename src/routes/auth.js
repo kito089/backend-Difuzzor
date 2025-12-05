@@ -228,7 +228,7 @@ router.post("/getUserInfo", async (req, res) => {
             formData.append('visibility', 'public');
             formData.append('permanent', 'false');
 
-            const easyFileUrl = ''//'https://easyfileurl.com/api/v1/files'; // URL de la API de Easy File URL
+            const easyFileUrl = 'https://easyfileurl.com/api/v1/files'; // URL de la API de Easy File URL
             const apiKey = process.env.EASYFILEURL_API_KEY;
             
             const uploadResponse = await fetch(easyFileUrl, {
