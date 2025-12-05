@@ -48,11 +48,15 @@ export async function seleccionarId(tabla, id) {
     const pool = poolPromise;
     const atributos = await obtenerAtributos(tabla);
 
+    console.log("Atributos:", atributos);
+    console.log("ID recibido:", id);
+    console.log("Tabla:", tabla);
+
     const [rows] = await pool.query(
         `SELECT * FROM \`${tabla}\` WHERE \`${atributos[0]}\` = ?`,
         [id]
     );
-
+    console.log(rows);
     return rows[0] ?? null;
 }
 
