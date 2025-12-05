@@ -224,14 +224,15 @@ router.post("/getUserInfo", async (req, res) => {
             formData.append('file', blob, `${formattedUserId}.jpg`);
             
             // Configurar opciones para Easy File URL
-            // NOTA: Reemplaza 'TU_API_KEY' con tu clave de API real de Easy File URL
-            const easyFileUrl = 'https://api.easyfileurl.com/upload'; // URL de la API de Easy File URL
+            formData.append('visibility', 'public');
+            formData.append('permanent', 'false');
+
+            const easyFileUrl = 'https://easyfileurl.com/api/v1/files'; // URL de la API de Easy File URL
             const apiKey = process.env.EASYFILEURL_API_KEY;
             
             const uploadResponse = await fetch(easyFileUrl, {
               method: "POST",
               headers: {
-                // Easy File URL generalmente requiere un API key en los headers
                 'Authorization': `Bearer ${apiKey}`,
                 // No establecer 'Content-Type' cuando se usa FormData, fetch lo hace automáticamente
               },
