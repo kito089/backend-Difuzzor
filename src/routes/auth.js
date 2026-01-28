@@ -15,7 +15,11 @@ router.get("/", (req, res) => {
   res.send("Ruta de autenticación funcionando");
 });
 
-// Ruta: /auth/CodeForToken
+/* ----------------------------------------------------------
+   POST /CodeForToken
+   Body esperado:
+   {accesCode}
+----------------------------------------------------------- */
 router.post("/CodeForToken", async (req, res) => {
   try {
     console.log("Accediendo a /auth/CodeForToken");
@@ -66,7 +70,11 @@ router.post("/CodeForToken", async (req, res) => {
   }
 });
 
-// Ruta: /auth/RefreshToken
+/* ----------------------------------------------------------
+   POST /RefreshToken
+   Body esperado:
+   {refresh_token}
+----------------------------------------------------------- */
 router.post("/RefreshToken", async (req, res) => {
   try {
     console.log("Accediendo a /auth/RefreshToken");
@@ -112,7 +120,11 @@ router.post("/RefreshToken", async (req, res) => {
   }
 }); 
 
-// Ruta: /auth/validateToken
+/* ----------------------------------------------------------
+   POST /validateToken
+   Body esperado:
+   {access_token}
+----------------------------------------------------------- */
 router.post("/validateToken", async (req, res) => {
   try {
     console.log("Accediendo a /auth/validateToken");
@@ -137,7 +149,11 @@ router.post("/validateToken", async (req, res) => {
   }
 });
 
-// Ruta: /auth/getUserInfo
+/* ----------------------------------------------------------
+   POST /getUserInfo
+   Body esperado:
+   {access_token}
+----------------------------------------------------------- */
 router.post("/getUserInfo", async (req, res) => {
   try {
     console.log("Accediendo a /auth/getUserInfo");

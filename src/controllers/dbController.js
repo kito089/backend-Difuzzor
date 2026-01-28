@@ -15,10 +15,24 @@ export async function formatearDatos(datos) {
     return [pool.escape(datos)];
 }
 
+/*
+    Evitar accesos de tablas no deseadas
+*/
+function validarTabla(tabla) {
+    const TABLAS = [
+        "Departamento"
+    ]
+    if (!TABLAS.includes(tabla)){
+        throw new Error(`Acceso no permitido a la tabla: ${tabla}`);
+    }
+}
+
+
 /* ---------------------------------------------------------
    Obtiene los nombres de columnas de una tabla
 --------------------------------------------------------- */
 export async function obtenerAtributos(tabla) {
+    validarTabla(tabla);
     const pool = poolPromise;
 
     const [rows] = await pool.query(
@@ -37,6 +51,7 @@ export async function obtenerAtributos(tabla) {
    Seleccionar todos los registros
 --------------------------------------------------------- */
 export async function seleccionarTodos(tabla) {
+    validarTabla(tabla);
     const pool = poolPromise;
     const [rows] = await pool.query(`SELECT * FROM \`${tabla}\``);
     return rows;
@@ -46,6 +61,7 @@ export async function seleccionarTodos(tabla) {
    Seleccionar registro por ID
 --------------------------------------------------------- */
 export async function seleccionarId(tabla, id) {
+    validarTabla(tabla);
     const pool = poolPromise;
     const atributos = await obtenerAtributos(tabla);
 
@@ -65,6 +81,7 @@ export async function seleccionarId(tabla, id) {
    Insertar datos
 --------------------------------------------------------- */
 export async function insertarDatos(tabla, datos) {
+    validarTabla(tabla);
     try {
         const pool = poolPromise;
         const atributos = await obtenerAtributos(tabla);
@@ -97,6 +114,7 @@ export async function insertarDatos(tabla, datos) {
 --------------------------------------------------------- */
 
 export async function insertarConIdDatos(tabla, datos) {
+    validarTabla(tabla);
     try {
         const pool = poolPromise;
         const atributos = await obtenerAtributos(tabla);
@@ -123,6 +141,7 @@ export async function insertarConIdDatos(tabla, datos) {
    Actualizar datos
 --------------------------------------------------------- */
 export async function actualizarDatos(tabla, id, datos) {
+    validarTabla(tabla);
     const pool = poolPromise;
     const atributos = await obtenerAtributos(tabla);
 
@@ -146,6 +165,7 @@ export async function actualizarDatos(tabla, id, datos) {
    Eliminar datos
 --------------------------------------------------------- */
 export async function eliminarDatos(tabla, id) {
+    validarTabla(tabla);
     try {
         const pool = poolPromise;
         const atributos = await obtenerAtributos(tabla);
