@@ -18,15 +18,15 @@ export async function formatearDatos(datos) {
 /*
     Evitar accesos de tablas no deseadas
 */
-function validarTabla(tabla) {
+function validarTablaPublica(tabla) {
     const TABLAS = [
-        "Departamento"
+        "Departamento",
+        "Usuarios"
     ]
     if (!TABLAS.includes(tabla)){
         throw new Error(`Acceso no permitido a la tabla: ${tabla}`);
     }
 }
-
 
 /* ---------------------------------------------------------
    Obtiene los nombres de columnas de una tabla
