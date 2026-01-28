@@ -18,7 +18,7 @@ export async function formatearDatos(datos) {
 /*
     Evitar accesos de tablas no deseadas
 */
-function validarTablaPublica(tabla) {
+function validarTabla(tabla) {
     const TABLAS = [
         "Departamento",
         "Usuarios"
